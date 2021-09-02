@@ -10,27 +10,21 @@ use Gugunso\KeyValueList\Contracts\Definer;
  *
  * @package Gugunso\KeyValueList\Definer
  */
-class SqlDefiner implements Definer
+class DatabaseClassificationDefiner implements Definer
 {
     /**
      * @var DatabaseRepository $repository
      */
     private $repository;
-    /**
-     * @var string $sql
-     */
-    private $sql;
 
     /**
      * SqlDefiner constructor.
      *
-     * @param string             $sql
      * @param DatabaseRepository $repository
      */
-    public function __construct(string $sql, DatabaseRepository $repository)
+    public function __construct(DatabaseRepository $repository)
     {
         $this->repository = $repository;
-        $this->sql = $sql;
     }
 
     /**
@@ -40,6 +34,6 @@ class SqlDefiner implements Definer
      */
     public function definition(): array
     {
-        return $this->repository->select($this->sql);
+        return $this->repository->select();
     }
 }

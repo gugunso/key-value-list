@@ -4,26 +4,26 @@ namespace Tests\Gugunso\KeyValueList\Definer;
 
 use Gugunso\KeyValueList\Contracts\DatabaseRepository;
 use Gugunso\KeyValueList\Contracts\Definer;
-use Gugunso\KeyValueList\Definer\SqlDefiner;
+use Gugunso\KeyValueList\Definer\DatabaseClassificationDefiner;
+use Gugunso\KeyValueList\Driver\DatabaseRepository\RowSqlRepository;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Class SqlDefinerTest
- * @package Tests\Gugunso\KeyValueList\SqlDefiner
- * @coversDefaultClass \Gugunso\KeyValueList\Definer\SqlDefiner
+ * @package Tests\Gugunso\KeyValueList\DatabaseClassificationDefiner
+ * @coversDefaultClass \Gugunso\KeyValueList\Definer\DatabaseClassificationDefiner
  */
-class SqlDefinerTest extends TestCase
+class DatabaseClassificationDefinerTest extends TestCase
 {
-    protected $testClassName = SqlDefiner::class;
+    protected $testClassName = DatabaseClassificationDefiner::class;
 
     /**
      * @covers ::__construct
      */
     public function test___construct()
     {
-        $argumentSql = 'SELECT something FROM nice_table';
-        $mockDatabaseRepo = \Mockery::mock(DatabaseRepository::class);
-        $targetClass = new $this->testClassName($argumentSql, $mockDatabaseRepo);
+        $mockDatabaseRepo = \Mockery::mock(RowSqlRepository::class);
+        $targetClass = new $this->testClassName($mockDatabaseRepo);
         $this->assertInstanceOf(Definer::class, $targetClass);
         return $targetClass;
     }
@@ -33,14 +33,17 @@ class SqlDefinerTest extends TestCase
      */
     public function test_definition()
     {
-        $argumentSql = 'SELECT something FROM nice_table';
         $mockDatabaseRepo = \Mockery::mock(DatabaseRepository::class);
-        $mockDatabaseRepo->shouldReceive('select')->with($argumentSql)->andReturn(
-            [0 => [0 => 'result', 1 => 'of', 2 => 'query']]
+        $mockDatabaseRepo->shouldReceive('select')->withNoArgs()->andReturn(
+            [
+                0 => [0 => 'result', 1 => 'of', 2 => 'query']
+            ]
         );
-        $targetClass = new $this->testClassName($argumentSql, $mockDatabaseRepo);
+
+        $targetClass = new $this->testClassName($mockDatabaseRepo);
 
         $actual = $targetClass->definition();
+
         $this->assertSame([0 => [0 => 'result', 1 => 'of', 2 => 'query']], $actual);
     }
 
