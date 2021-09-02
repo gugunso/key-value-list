@@ -11,7 +11,7 @@ use PDOStatement;
  * Class LaravelDatabaseRepository
  * @package Gugunso\KeyValueList\Driver\DatabaseRepository
  */
-class RowSqlRepository implements DatabaseRepository
+class RawSqlRepository implements DatabaseRepository
 {
     /**
      * @var string $sql

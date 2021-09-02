@@ -4,7 +4,7 @@ namespace Gugunso\KeyValueList\Tests\Definer;
 
 use Gugunso\KeyValueList\Contracts\Definer;
 use Gugunso\KeyValueList\Definer\DatabaseKeyValueDefiner;
-use Gugunso\KeyValueList\Driver\DatabaseRepository\RowSqlRepository;
+use Gugunso\KeyValueList\Driver\DatabaseRepository\RawSqlRepository;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -21,7 +21,7 @@ class DatabaseKeyValueDefinerTest extends TestCase
      */
     public function test___construct()
     {
-        $mockDatabaseRepo = \Mockery::mock(RowSqlRepository::class);
+        $mockDatabaseRepo = \Mockery::mock(RawSqlRepository::class);
         $targetClass = new $this->testClassName($mockDatabaseRepo, 'keyCol', 'valueCol');
         $this->assertInstanceOf(Definer::class, $targetClass);
     }
@@ -31,7 +31,7 @@ class DatabaseKeyValueDefinerTest extends TestCase
      */
     public function test_definition()
     {
-        $mockDatabaseRepo = \Mockery::mock(RowSqlRepository::class);
+        $mockDatabaseRepo = \Mockery::mock(RawSqlRepository::class);
         $mockDatabaseRepo->shouldReceive('select')->withNoArgs()->andReturn(
             [
                 0 => ['keyCol' => 1, 'valueCol' => 'value1'],

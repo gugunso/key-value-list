@@ -19,13 +19,238 @@
 
 
 
+# KeyValueList
+
+一次元配列様のKey-Valueの対応をクラスとして定義する際に利用する抽象クラスです。例えば、以下のような血液型の一覧が、システムの複数箇所で利用されている状況があるとします。
+
+```php
+//以下のような、KeyとValueの組み合わせに意味があるデータ構造が
+//アプリケーション内で共通して利用されている場合に、クラス化して定義するために利用する。
+[
+    1 => 'A',
+    2 => 'B',
+    3 => 'O',
+    4 => 'AB',
+];
+
+```
+
+このようなデータ構造はシステム内の1箇所にまとめて定義をしておくことが望ましいものですが、テーブルを設計してデータベースに格納しておくほどのものではありません。また、マスタテーブルを用意した方が良いようなデータの場合でも、アプリケーション開発初期段階においてはテーブル設計/シーディングの実装に先行してデータ構造の利用が必要になることも少なくないため、PHPのコードとしてデータ内容の定義を表現しておくことは有用です。このような場合に、KeyValueListは役立ちます。
+
+KeyValueListを継承した具象クラスでは、Definerを返却するgetDefiner() メソッドを定義しなければなりません。Definerは、このリストの定義そのものです。以下に、実装の具体的なサンプルを示します。
+
+## 実装サンプル1.配列により定義する
+
+最も単純な利用方法は、ArrayDefinerを利用してKeyValueListを定義することです。KeyValueListを継承し、ArrayDefinerオブジェクトを返却するgetDefiner()メソッドを実装します。以下に実装サンプルを示します。
+
+~~~php
+<?php
+namespace App\Samples;
+
+use Gugunso\KeyValueList\Contracts\Definer;
+use Gugunso\KeyValueList\Definer\ArrayDefiner;
+use Gugunso\KeyValueList\KeyValueList;
+
+class ArrayKeyValueList extends KeyValueList
+{
+    public function getDefiner(): Definer
+    {
+        //ArrayDefinerにより、配列として定義する。
+        //一次元配列として定義しなければならない点に注意。
+        return new ArrayDefiner(
+            [
+                1 => 'A',
+                2 => 'B',
+                3 => 'O',
+                4 => 'AB',
+            ]
+        );
+    }
+}
+~~~
+
+
+
+## 実装サンプル2.Eloquent Builder により内容を定義するKeyValueListの実装サンプル
+
+Eloquent Builderを利用してリスト内容を定義したい場合、EloquentBuilderRepository と DatabaseKeyValueDefiner を利用します。以下では、prefectures テーブルに対するModelクラス、Prefecture を利用して実装を行う場合のサンプルを示します。
+
+```php
+<?php
+
+namespace App\Samples;
+
+use App\Model\Prefecture;
+use Gugunso\KeyValueList\Contracts\Definer;
+use Gugunso\KeyValueList\Definer\DatabaseKeyValueDefiner;
+use Gugunso\KeyValueList\Driver\DatabaseRepository\EloquentBuilderRepository;
+use Gugunso\KeyValueList\Driver\DatabaseRepository\LaravelModelRepository;
+use Gugunso\KeyValueList\KeyValueList;
+use Illuminate\Support\Facades\App;
+
+/**
+ * Eloquent Builder を利用したKeyValueList定義のサンプル
+ * 都道府県IDと都道府県名の対応関係を表す。
+ * @package App\Samples
+ */
+class ModelKeyValueList extends KeyValueList
+{
+    /** @var Prefecture $model */
+    private $model;
+
+    public function __construct()
+    {
+        //依存するモデルをコンストラクタでpropertyに格納
+        $this->model = App::make(Prefecture::class);
+    }
+
+    public function getDefiner(): Definer
+    {
+        //Repositoryオブジェクトを作成
+        //モデルそのものではなく、newQuery()を介してクエリビルダを渡している点に注意。
+        //必要に応じて、where() や orderBy() など条件を付加することも可能。
+        $repo = new EloquentBuilderRepository($this->model->newQuery());
+
+        //repositoryとkeyの列名、valueの列名を指定して作成したDatabaseKeyValueDefinerを返却
+        return new DatabaseKeyValueDefiner($repo,'id', 'name');
+    }
+}
+```
+
+
+
+## 実装サンプル3.SQL文により内容を定義する
+単純に、Select文によってリスト内容を定義することも可能です。この場合、RowSqlRepositoryと、DatabaseKeyValueDefinerを利用します。前項と同様に、prefectures テーブルが定義されているものとして実装サンプルを示します。
+
+~~~php SqlKeyValueList.php
+<?php
+namespace App\Samples;
+
+use Gugunso\KeyValueList\Contracts\Definer;
+use Gugunso\KeyValueList\Definer\DatabaseKeyValueDefiner;
+use Gugunso\KeyValueList\Driver\DatabaseRepository\RowSqlRepository;
+use Gugunso\KeyValueList\KeyValueList;
+
+/**
+ * SQL文によるKeyValueListリスト定義のサンプル
+ * 都道府県IDと都道府県名の対応関係を表す。
+ * Class SampleKeyValueList
+ * @package App\Samples
+ */
+class SqlKeyValueList extends KeyValueList
+{
+    public function getDefiner(): Definer
+    {
+        //SQL文を渡してrepositoryを作成
+        $repository = new RowSqlRepository('SELECT id,name FROM prefectures ORDER BY rank ASC ');
+        //repositoryとkey列名、value列名を渡して作成したDatabaseKeyValueDefinerを返却
+        return new DatabaseKeyValueDefiner($repository,'id','name');
+    }
+}
+~~~
+
+## キャッシュ機能
+
+KeyValueListを継承して作成したクラスは、リスト内容をキャッシュすることが可能です。
+
+現時点では、対応しているフレームワークはLaravelのみです。
+
+キャッシュを利用するKeyValueListを作成したい場合、LaravelCacheKeyValueListを継承してクラスを実装してください。
+
+- キャッシュデータは、storage以下に作成されます。
+- データベース内容をキャッシュする場合、データ更新時にキャッシュクリアを行うなど、アプリケーション側で適切にハンドリングを行ってください。
+- LaravelCacheKeyValueListによって作成されるキャッシュ名は、static::class . '-cache' と定義されています。
+
+
+
+## 備考
+
+- KeyValueList は 
+  IteratorAggregate, ArrayAccessインターフェースを実装しているため、配列様のようなアクセスや、foreach文でループ処理を行うことも可能です。
+- KeyValueListの利用可能なメソッドについては、KeyValueListable インターフェースを参照してください。
+
+
+
 # Classification
 
 抽象クラスClassificationは、主に区分値として機能する類のマスタデータをアプリケーション上に表現することを意図したクラスです。Classificationクラスのメソッドを利用して、様々なアプリケーションの仕様を実装することができます。
 
-Classificationクラスを継承した具象クラスでは、getIdentityIndex() メソッドを実装しなければなりません。このメソッドは、データ構造中で識別子を保持している項目の名称を返却するよう実装してください。
+Classificationクラスを継承した具象クラスでは、getDefiner() メソッドに加えて、getIdentityIndex() メソッドを実装しなければなりません。このメソッドは、データ構造中で識別子を保持している項目の名称を返却するよう実装してください。
 
-以下に、具体的な例を示します。
+## 実装サンプル1.Eloquent Builderにより内容を定義する
+
+getDefiner() については基本的にKeyValueListと同様ですが、利用するDefinerクラスが異なります。データベースから取得する場合、DatabaseClassificationDefinerを利用してください。
+
+```php ModelClassification.php
+<?php
+
+namespace App\Samples;
+
+use App\Model\Prefecture;
+use Gugunso\KeyValueList\Classification;
+use Gugunso\KeyValueList\Contracts\Definer;
+use Gugunso\KeyValueList\Definer\DatabaseClassificationDefiner;
+use Gugunso\KeyValueList\Driver\DatabaseRepository\EloquentBuilderRepository;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\App;
+
+class ModelClassification extends Classification
+{
+    /** @var Model $model */
+    private $model;
+
+    public function __construct()
+    {
+        $this->model = App::make(Prefecture::class);
+    }
+
+    public function getDefiner(): Definer
+    {
+        $repo = new EloquentBuilderRepository($this->model->newQuery());
+        return new DatabaseClassificationDefiner($repo);
+    }
+
+    protected function getIdentityIndex()
+    {
+        return 'id';
+    }
+}
+
+```
+
+
+
+## 実装サンプル2.SQL文により内容を定義する
+
+SQLによる定義の場合も同様です。
+
+~~~php
+namespace App\Samples;
+
+use Gugunso\KeyValueList\Classification;
+use Gugunso\KeyValueList\Contracts\Definer;
+use Gugunso\KeyValueList\Definer\DatabaseClassificationDefiner;
+use Gugunso\KeyValueList\Driver\DatabaseRepository\RawSqlRepository;
+
+class SqlClassification extends Classification
+{
+    protected function getIdentityIndex()
+    {
+        return 'id';
+    }
+
+    public function getDefiner(): Definer
+    {
+        $repo = new RawSqlRepository('select id,name,rank FROM prefectures ORDER BY rank ASC');
+        return new DatabaseClassificationDefiner($repo);
+    }
+}
+
+~~~
+
+## 実装サンプル3.配列による定義、実践的なメソッドの例
+
+配列を利用した定義の場合、KeyValueListと全く同様にArrayDefinerを利用します。ただし、データ内容が同じ列構造を持った複数の行で構成される二次元配列となるよう、実装者が注意して実装してください。
 
 ``` php SampleClassification.php
 <?php
@@ -59,7 +284,7 @@ class SampleClassification extends Classification
      * この例では、マスタデータ様のデータ構造を配列として表現したサンプルとなっている。
      *
      * Classificationクラスは、すべての行が同じ列構造を持つことを前提として設計されているので、
-     * 行ごとに構造に差異がある複雑なデータ構造を返却した場合には想定通り動作しない可能性があるため、注意すること。
+     * 行ごとに構造に差異がある複雑なデータ構造を返却した場合には想定通り動作しない可能性がある。注意すること。
      * @return Definer
      */
     public function getDefiner(): Definer
@@ -143,4 +368,10 @@ class SampleClassification extends Classification
     }
 }
 ```
+
+## 備考
+
+- Classificationを継承して作成したクラスは、getDefiner() 以外にpublicメソッドを持ちません。実装者が、アプリケーションの仕様として必要なpublicメソッドを適宜追加してください。
+- キャッシュは、LaravelCacheClassification を利用してください。キャッシュされるのは、getDefiner() の定義内容です。
+- 
 

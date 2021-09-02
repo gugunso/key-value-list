@@ -5,7 +5,7 @@ namespace Tests\Gugunso\KeyValueList\Definer;
 use Gugunso\KeyValueList\Contracts\DatabaseRepository;
 use Gugunso\KeyValueList\Contracts\Definer;
 use Gugunso\KeyValueList\Definer\DatabaseClassificationDefiner;
-use Gugunso\KeyValueList\Driver\DatabaseRepository\RowSqlRepository;
+use Gugunso\KeyValueList\Driver\DatabaseRepository\RawSqlRepository;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -22,7 +22,7 @@ class DatabaseClassificationDefinerTest extends TestCase
      */
     public function test___construct()
     {
-        $mockDatabaseRepo = \Mockery::mock(RowSqlRepository::class);
+        $mockDatabaseRepo = \Mockery::mock(RawSqlRepository::class);
         $targetClass = new $this->testClassName($mockDatabaseRepo);
         $this->assertInstanceOf(Definer::class, $targetClass);
         return $targetClass;

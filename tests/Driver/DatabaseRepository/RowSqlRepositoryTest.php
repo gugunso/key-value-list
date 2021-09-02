@@ -3,18 +3,18 @@
 namespace Gugunso\KeyValueList\Tests\Driver\DatabaseRepository;
 
 use Gugunso\KeyValueList\Contracts\DatabaseRepository;
-use Gugunso\KeyValueList\Driver\DatabaseRepository\RowSqlRepository;
+use Gugunso\KeyValueList\Driver\DatabaseRepository\RawSqlRepository;
 use Illuminate\Support\Facades\DB;
 use Orchestra\Testbench\TestCase;
 
 /**
- * @coversDefaultClass \Gugunso\KeyValueList\Driver\DatabaseRepository\RowSqlRepository
+ * @coversDefaultClass \Gugunso\KeyValueList\Driver\DatabaseRepository\RawSqlRepository
  * Gugunso\KeyValueList\Tests\Driver\DatabaseRepository\RowSqlRepositoryTest
  */
 class RowSqlRepositoryTest extends TestCase
 {
     /** @var $testClassName as test target class name */
-    protected $testClassName = RowSqlRepository::class;
+    protected $testClassName = RawSqlRepository::class;
 
     /**
      *
