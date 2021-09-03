@@ -372,6 +372,15 @@ class SampleClassification extends Classification
 ## 備考
 
 - Classificationを継承して作成したクラスは、getDefiner() 以外にpublicメソッドを持ちません。実装者が、アプリケーションの仕様として必要なpublicメソッドを適宜追加してください。
-- キャッシュは、LaravelCacheClassification を利用してください。キャッシュされるのは、getDefiner() の定義内容です。
-- 
 
+- キャッシュは、LaravelCacheClassification を利用してください。キャッシュされるのは、getDefiner() の定義内容です。
+
+  
+
+# 補足
+
+- Laravel以外のキャッシュ機構に対応したい場合、CacheRepository インターフェースを実装したドライバクラスを用意し、LaravelCacheKeyValueListを参考に機能を追加してください。
+
+  
+
+  
